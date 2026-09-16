@@ -93,10 +93,11 @@ Evaluation indeterminate or structurally unprovable:
 2. [The Irreducible State](docs/irreducible-state.md)
 3. [Cursive Computation](docs/cursive-computation.md)
 4. [Admissibility](docs/admissibility.md)
-5. [Refusal Semantics](docs/refusal-semantics.md)
-6. [Constitutional Meta-Layer](docs/constitutional-meta-layer.md)
-7. [Formal State Machine](formal/state-machine.md)
-8. [Terminology](spec/terminology.md)
+5. [Canonical Vertical Slice](docs/canonical-vertical-slice.md)
+6. [Refusal Semantics](docs/refusal-semantics.md)
+7. [Constitutional Meta-Layer](docs/constitutional-meta-layer.md)
+8. [Formal State Machine](formal/state-machine.md)
+9. [Terminology](spec/terminology.md)
 
 ## Core invariants
 
@@ -119,6 +120,14 @@ Lineage is not an unordered set of receipts. Each new receipt binds to the authe
 ### 5. Fail closed under ambiguity
 
 If the system cannot prove that a candidate transition is admissible, it does not guess. It halts or refuses according to the applicable transition semantics.
+
+### 6. Recovery anchors to admitted state
+
+A refusal remains in the authenticated evidence timeline without becoming the checkpoint from which protected operational state is recovered. Recovery anchors to the last admitted checkpoint.
+
+### 7. Fixed refusal inputs have stable receipt identity
+
+When the canonical refusal payload is fixed—including the resolved evaluation timestamp—the refusal receipt hash is stable across repeated execution.
 
 ## Formal transition sketch
 
@@ -152,6 +161,17 @@ and therefore normally:
 \]
 
 whether the proposal is admitted or refused.
+
+## Implementation correspondence
+
+The current reference implementation makes an important projection explicit through `WakeChain`:
+
+- `evidence_timeline()` contains Genesis, admissions, **and refusals**.
+- `state_sequence()` contains Genesis and **admissions only**.
+
+In this explainer, \(S=(O,\Gamma)\) denotes the irreducible full state. The implementation method `state_sequence()` should therefore be read as the admitted operational-state progression, not as the complete \((O,\Gamma)\) object. A refusal advances the evidence timeline and the full constitutive state while leaving the admitted operational projection unchanged.
+
+Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` adds executable coverage for that distinction, recovery anchoring to the prior admitted checkpoint, runtime null-collapse routing through refusal, and stable refusal receipt IDs for fixed evaluation inputs.
 
 ## Status
 
