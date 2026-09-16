@@ -110,7 +110,7 @@ The current upstream implementation exposes the same distinction through `WakeCh
 - `evidence_timeline()` retains Genesis, admissions, and refusals,
 - `state_sequence()` retains Genesis and admitted links only.
 
-Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` adds executable coverage showing that a refusal extends the evidence timeline, does not advance the admission-only state sequence, preserves recovery at the prior admitted checkpoint, routes runtime null-collapse through refusal, and stabilizes refusal receipt IDs for fixed inputs.
+Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` adds executable coverage showing that a refusal extends the evidence timeline, does not advance the admission-only state sequence, preserves recovery at the prior admitted checkpoint, routes runtime null-collapse through refusal, and removes wall-clock variance from refusal receipt IDs when the bounded refusal payload is otherwise fixed.
 
 ## Architecture at a glance
 

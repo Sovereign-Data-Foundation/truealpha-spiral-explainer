@@ -269,6 +269,6 @@ Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` directly tests that:
 2. refusal does not advance the admission-only `state_sequence()`,
 3. recovery anchors to the prior admitted checkpoint,
 4. runtime null-collapse becomes a refusal,
-5. fixed refusal inputs produce stable refusal receipt IDs.
+5. repeated evaluation of the same bounded refusal payload produces the same refusal receipt ID.
 
 Those tests validate the admitted projection. The architectural full-state relation retains that projection together with the complete authenticated lineage.
