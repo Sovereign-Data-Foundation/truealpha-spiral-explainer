@@ -1,6 +1,6 @@
 # Formal State Machine
 
-This document formalizes the current TAS implementation around one canonical datum: the TAS_DNA gene.
+This document preserves both the architectural full-state model and the implementation's admission-only state sequence by relating them through TAS_DNA.
 
 ## 1. Canonical transition datum
 
@@ -10,111 +10,166 @@ Let
 G_i=(o_i,c_i,a_i,x_i,p_i,\Phi_i,d_i,r_i)
 \]
 
-with decision
+with
 
 \[
 d_i\in\{\mathrm{ADMITTED},\mathrm{REFUSED},\mathrm{PENDING}\}.
 \]
 
-`TASGene` is the current implementation of this minimal transition unit.
+`TASGene` is the current implementation of this TAS_DNA datum.
 
-No additional composite state definition is required to represent refusal lineage.
-
-## 2. Ordered gene chronology
-
-Let \(\mathcal G_n\) be the ordered chronology of represented TAS_DNA genes.
-
-For each represented decision event,
-
-\[
-\mathcal G_{n+1}=\mathcal G_n\Vert G_i.
-\]
-
-Parentage requires
-
-\[
-p_i=\operatorname{Tip}(\mathcal G_n)
-\]
-
-under the applicable lineage semantics.
-
-## 3. Evidence projection
-
-Define
-
-\[
-\mathcal E:\mathcal G\to\text{EvidenceTimeline}
-\]
-
-as the projection retaining all represented admission and refusal events.
-
-For admission or refusal:
-
-\[
-\mathcal E_{n+1}=\mathcal E_n\Vert G_i.
-\]
-
-The current `WakeChain.evidence_timeline()` is the implementation-level view corresponding to this projection.
-
-## 4. Authorized-state projection
-
-Let \(S_k\) denote the authorized operational state progression.
-
-Define the state transition operator
-
-\[
-T_S(S_k,G_i)=
-\begin{cases}
-F(S_k,G_i), & d_i=\mathrm{ADMITTED},\\[4pt]
-S_k, & d_i=\mathrm{REFUSED},\\[4pt]
-S_k, & d_i=\mathrm{PENDING}.
-\end{cases}
-\]
-
-Thus:
-
-### Admission
-
-\[
-d_i=\mathrm{ADMITTED}
-\Rightarrow
-S_{k+1}=F(S_k,G_i).
-\]
-
-### Refusal
-
-\[
-d_i=\mathrm{REFUSED}
-\Rightarrow
-S_{k+1}=S_k.
-\]
-
-The current `WakeChain.state_sequence()` is the implementation-level admitted projection: Genesis plus admitted links only.
-
-## 5. One datum, two projections
-
-The complete relationship is therefore
-
-\[
-\boxed{
-G_i
-\longrightarrow
-\begin{cases}
-\mathcal E_{n+1}=\mathcal E_n\Vert G_i,\\
-S_{k+1}=T_S(S_k,G_i).
-\end{cases}}
-\]
-
-The same datum feeds both projections.
-
-There is no contradiction between a refusal being present in evidence and absent from the next authorized state transition.
-
-## 6. Admissibility
+## 2. Authenticated lineage
 
 Let
 
 \[
-\operatorname{Adm}(S_k,x_i)\in\{0,1\}
+\Gamma_n=(G_1,G_2,\ldots,G_n)
+\]
+
+be the ordered authenticated TAS_DNA trajectory.
+
+Every successfully represented admission or refusal extends lineage:
+
+\[
+\Gamma_{n+1}=\Gamma_n\Vert G_i.
+\]
+
+## 3. Admitted projection
+
+Define
+
+\[
+\Pi_A(\Gamma_n)
+\]
+
+as the ordered subsequence of genes satisfying
+
+\[
+d_i=\mathrm{ADMITTED}.
+\]
+
+The current implementation's `WakeChain.state_sequence()` corresponds to this admitted projection.
+
+The broader `WakeChain.evidence_timeline()` corresponds to the chronology containing admissions and refusals.
+
+## 4. Operational reconstruction
+
+Let
+
+\[
+L:\Pi_A(\Gamma)\to\mathcal O
+\]
+
+reconstruct authorized operational state from admitted history.
+
+Then
+
+\[
+O_n=L(\Pi_A(\Gamma_n)).
+\]
+
+This allows the implementation's admission-only progression and the architectural full state to coexist without contradiction.
+
+## 5. Irreducible full state
+
+Define
+
+\[
+S_n=(O_n,\Gamma_n).
+\]
+
+Substituting the operational reconstruction gives
+
+\[
+\boxed{
+S_n=\bigl(L(\Pi_A(\Gamma_n)),\Gamma_n\bigr).
+}
+\]
+
+This is the formal bridge supplied by TAS_DNA.
+
+## 6. Admission
+
+For admitted gene \(G_i\):
+
+\[
+d_i=\mathrm{ADMITTED}.
+\]
+
+Then
+
+\[
+\Gamma_{n+1}=\Gamma_n\Vert G_i
+\]
+
+and
+
+\[
+\Pi_A(\Gamma_{n+1})=\Pi_A(\Gamma_n)\Vert G_i.
+\]
+
+Therefore operational state advances according to
+
+\[
+O_{n+1}=F(O_n,G_i),
+\]
+
+and
+
+\[
+S_{n+1}=(O_{n+1},\Gamma_{n+1}).
+\]
+
+## 7. Refusal
+
+For refused gene \(G_i\):
+
+\[
+d_i=\mathrm{REFUSED}.
+\]
+
+Lineage still advances:
+
+\[
+\Gamma_{n+1}=\Gamma_n\Vert G_i.
+\]
+
+But the admitted projection does not:
+
+\[
+\Pi_A(\Gamma_{n+1})=\Pi_A(\Gamma_n).
+\]
+
+Therefore:
+
+\[
+O_{n+1}=O_n.
+\]
+
+Yet the irreducible full state changes:
+
+\[
+S_{n+1}=(O_n,\Gamma_n\Vert G_i)\neq(O_n,\Gamma_n)=S_n.
+\]
+
+Thus both statements are simultaneously true:
+
+\[
+\boxed{\text{refusal does not advance admitted operational state}}
+\]
+
+and
+
+\[
+\boxed{\text{refusal does advance full constitutive state}}.
+\]
+
+## 8. Admissibility
+
+Let
+
+\[
+\operatorname{Adm}(S_n,x_i)\in\{0,1\}
 \]
 
 be the deterministic admission predicate.
@@ -122,7 +177,7 @@ be the deterministic admission predicate.
 A representative factorization is
 
 \[
-\operatorname{Adm}(S_k,x_i)
+\operatorname{Adm}(S_n,x_i)
 =
 \operatorname{Auth}(x_i)
 \wedge
@@ -130,25 +185,23 @@ A representative factorization is
 \wedge
 \operatorname{Scope}(x_i)
 \wedge
-\operatorname{Invariant}(S_k,x_i)
+\operatorname{Invariant}(S_n,x_i)
 \wedge
-\operatorname{Fresh}(S_k,x_i).
+\operatorname{Fresh}(S_n,x_i).
 \]
 
-If the predicate fails, the resulting gene records `REFUSED` rather than advancing authorized state.
+Failure produces a refused TAS_DNA datum rather than an admitted operational transition.
 
-## 7. Runtime fail-closed conversion
+## 9. Runtime fail-closed conversion
 
-The current `CanonicalVerticalSlice` can admit at the verifier layer and still refuse at runtime.
-
-Abstractly:
+The current `CanonicalVerticalSlice` can pass verifier admission and still refuse at runtime.
 
 \[
-\operatorname{Adm}(S_k,x_i)=1
+\operatorname{Adm}(S_n,x_i)=1
 \land
 \neg\operatorname{RuntimeOK}(x_i)
 \Rightarrow
-d_i=\mathrm{REFUSED}.
+G_i.d=\mathrm{REFUSED}.
 \]
 
 For runtime null-collapse:
@@ -159,29 +212,27 @@ For runtime null-collapse:
 G_i.d=\mathrm{REFUSED}.
 \]
 
-The evidence projection advances; authorized state does not.
+That gene extends \(\Gamma\), but not \(\Pi_A(\Gamma)\).
 
-## 8. Recovery
+## 10. Recovery
 
 Let
 
 \[
-\operatorname{Checkpoint}(S_k)
+\operatorname{Tip}_A(\Gamma_n)=\operatorname{Tip}(\Pi_A(\Gamma_n))
 \]
 
-return the most recent admitted checkpoint, with Genesis as the initial checkpoint.
+be the latest admitted checkpoint.
 
 For refusal:
 
 \[
-\operatorname{RecoveryAnchor}(G_i)
-=
-\operatorname{Checkpoint}(S_k).
+\operatorname{RecoveryAnchor}(G_i)=\operatorname{Tip}_A(\Gamma_n).
 \]
 
-The refused gene is preserved in evidence but is not promoted into the recovery state.
+The refused gene remains in full lineage while recovery stays anchored to authorized operational history.
 
-## 9. Deterministic refusal receipt
+## 11. Deterministic refusal receipt
 
 Let \(p_i^-\) be the canonical refusal payload and define
 
@@ -197,42 +248,27 @@ p_a^-=p_b^-
 R_a^-=R_b^-.
 \]
 
-The evaluation timestamp is part of the canonical payload. Fixed inputs include a fixed resolved timestamp.
+The resolved evaluation timestamp is part of the canonical payload.
 
-## 10. Complete mediation
+## 12. Complete mediation
 
-Let \(P\) be the set of all consequential execution paths. TAS requires
+Let \(P\) be the set of consequential execution paths. TAS requires
 
 \[
 \forall e\in P,
-\neg\mathbb A(e)
-\Rightarrow
-\neg\mathbb C(e),
+\neg\mathbb A(e)\Rightarrow\neg\mathbb C(e).
 \]
 
-where \(\mathbb A\) denotes admissibility and \(\mathbb C\) denotes consequential commit.
+A verifier is insufficient if another path can bypass it.
 
-A verifier alone is insufficient if another path can bypass it.
-
-## 11. Upstream semantic correspondence
-
-The upstream specification explicitly states two simultaneous histories:
-
-- an evidentiary timeline that records admissions and refusals,
-- a state lineage that advances only through valid committed transitions.
-
-It then defines TAS_DNA as the minimal computational gene carrying origin, context, authority, operation, parent, invariants, decision, and receipt.
-
-The formalization here preserves those semantics directly instead of redefining `state` to include the evidence chronology.
-
-## 12. Executable correspondence
+## 13. Executable correspondence
 
 Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` directly tests that:
 
-1. a refused gene extends WakeChain evidence,
-2. a refusal does not advance `state_sequence()`,
+1. a refused TAS_DNA gene extends WakeChain evidence,
+2. refusal does not advance the admission-only `state_sequence()`,
 3. recovery anchors to the prior admitted checkpoint,
 4. runtime null-collapse becomes a refusal,
-5. fixed refusal inputs produce a stable `refusal_receipt_id`.
+5. fixed refusal inputs produce stable refusal receipt IDs.
 
-Those tests are the executable realization of the one-datum/two-projection model above.
+Those tests validate the admitted projection. The architectural full-state relation retains that projection together with the complete authenticated lineage.
