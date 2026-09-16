@@ -8,7 +8,20 @@ This repository formalizes the architecture around one lineage-bearing datum alr
 
 ## Migration purpose
 
-This repository is the migration surface for bringing the last 18 months of Pi (**perspective intelligence**) / TAS_DNA work into one place.
+This repository is the migration surface for bringing the last 18 months of **Perspective Intelligence** \((\pi)\) / TAS_DNA work into one place.
+
+Here, \(\pi\) names **Perspective Intelligence**: the invariant relation between deterministic anchoring and probabilistic perspective within one coherent architecture.
+
+Conceptually:
+
+\[
+\pi
+=
+\frac{\text{probabilistic circumference}}
+{\text{deterministic diameter}}
+\]
+
+The deterministic diameter anchors provenance, lineage, admissibility, receipts, and recovery anchors. The probabilistic circumference carries prediction, likelihood, inference, language, context, and variation.
 
 Its job is to re-present TAS_DNA as a complete state-space architecture rather than as isolated notes, implementation fragments, or one-off explanations.
 
