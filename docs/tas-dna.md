@@ -1,182 +1,204 @@
-# TAS_DNA — One Datum, Two Projections
+# TAS_DNA — One Datum, One State Relation
 
-The explainer uses one canonical transition datum: the TAS_DNA gene.
+TAS_DNA is the canonical lineage-bearing transition datum.
 
-The upstream specification and implementation define the minimal transition unit as
+The current implementation represents it as
 
 \[
-G_i =
-(
-\text{origin},
-\text{context},
-\text{authority},
-\text{operation},
-\text{parent},
-\text{invariants},
-\text{decision},
-\text{receipt}
-).
+G_i=(o_i,c_i,a_i,x_i,p_i,\Phi_i,d_i,r_i),
 \]
 
-The current implementation names this object `TASGene`.
+with fields for origin, context, authority, operation, parent, invariants, decision, and receipt.
 
-The point of the formalization is not to invent a second state ontology around the gene. It is to make explicit that **one canonical datum can be viewed through two different projections**.
+The purpose of formalizing TAS_DNA is not to replace any existing state model. It is to connect them precisely.
 
-## 1. The datum
+## 1. TAS_DNA is the unit of lineage
 
 Let
 
 \[
-G_i=(o_i,c_i,a_i,x_i,p_i,\Phi_i,d_i,r_i)
+\Gamma_n=(G_1,G_2,\ldots,G_n)
 \]
 
-where:
+be the ordered authenticated TAS_DNA trajectory.
 
-- \(o_i\) — origin,
-- \(c_i\) — context,
-- \(a_i\) — authority,
-- \(x_i\) — proposed operation,
-- \(p_i\) — parent gene identity,
-- \(\Phi_i\) — invariants evaluated,
-- \(d_i\in\{\mathrm{ADMITTED},\mathrm{REFUSED},\mathrm{PENDING}\}\) — decision,
-- \(r_i\) — receipt.
-
-This is the smallest object that carries the constitutional relationship through the system.
-
-## 2. One chronology
-
-Let \(\mathcal G_n\) be the ordered chronology of processed TAS_DNA genes.
-
-For every successfully represented decision event,
+Each represented admission or refusal extends that lineage:
 
 \[
-\mathcal G_{n+1}=\mathcal G_n\Vert G_i.
+\Gamma_{n+1}=\Gamma_n\Vert G_i.
 \]
 
-Admission and refusal are therefore not different species of data. They are different decision values inside the same canonical datum.
+Admission and refusal therefore share the same constitutional data grammar.
 
-## 3. Evidence projection
+## 2. The full state
 
-Define an evidence projection
+The architectural state remains
 
 \[
-\mathcal E(\mathcal G_n)
+S_n=(O_n,\Gamma_n),
 \]
 
-that retains the full ordered chronology of represented genes.
+where \(O_n\) is authorized operational state and \(\Gamma_n\) is authenticated lineage.
 
-Operationally, this corresponds to the WakeChain evidence timeline: admitted and refused genes are both retained.
+Nothing in TAS_DNA replaces this pair. TAS_DNA supplies the concrete datum from which \(\Gamma\) is built.
 
-For either decision,
+## 3. The admitted projection
+
+Define
 
 \[
-\mathcal E_{n+1}=\mathcal E_n\Vert G_i.
+\Pi_A(\Gamma_n)
 \]
 
-## 4. Authorized-state projection
+as the ordered subsequence of TAS_DNA genes whose decision is `ADMITTED`.
 
-Define an authorized-state projection
+The implementation's `WakeChain.state_sequence()` corresponds to this admitted projection, while `WakeChain.evidence_timeline()` corresponds to the broader chronology that contains admissions and refusals.
+
+Operational state can then be written as a deterministic reconstruction from admitted history:
 
 \[
-\mathcal S(\mathcal G_n)
+O_n=L(\Pi_A(\Gamma_n)).
 \]
 
-that advances only through admitted genes.
-
-For an admitted gene,
-
-\[
-d_i=\mathrm{ADMITTED}
-\Rightarrow
-S_{k+1}=F(S_k,G_i).
-\]
-
-For a refused gene,
-
-\[
-d_i=\mathrm{REFUSED}
-\Rightarrow
-S_{k+1}=S_k.
-\]
-
-The refusal is still present in \(\mathcal G\) and therefore in the evidence projection. It simply does not become the next authorized state.
-
-## 5. The key distinction
-
-The architecture therefore does **not** require redefining state as a composite object such as
-
-\[
-S=(O,\Gamma).
-\]
-
-That construction may be useful in another model, but it is not needed to explain the current TAS_DNA implementation and it conflicts with the upstream specification's explicit admission-only state lineage.
-
-The cleaner statement is:
+This makes the relationship explicit:
 
 \[
 \boxed{
-\text{one TAS\_DNA datum}
-\longrightarrow
+S_n=\bigl(L(\Pi_A(\Gamma_n)),\Gamma_n\bigr)
+}
+\]
+
+TAS_DNA is therefore the datum that binds operational state and authenticated history into one formal picture.
+
+## 4. Admission
+
+For admitted gene \(G_i\):
+
+\[
+d_i=\mathrm{ADMITTED}.
+\]
+
+Then
+
+\[
+\Gamma_{n+1}=\Gamma_n\Vert G_i
+\]
+
+and
+
+\[
+\Pi_A(\Gamma_{n+1})=\Pi_A(\Gamma_n)\Vert G_i.
+\]
+
+So the authorized operational projection advances:
+
+\[
+O_{n+1}=F(O_n,G_i).
+\]
+
+The full state advances because both its lineage and operational coordinates may change.
+
+## 5. Refusal
+
+For refused gene \(G_i\):
+
+\[
+d_i=\mathrm{REFUSED}.
+\]
+
+Then
+
+\[
+\Gamma_{n+1}=\Gamma_n\Vert G_i
+\]
+
+but
+
+\[
+\Pi_A(\Gamma_{n+1})=\Pi_A(\Gamma_n).
+\]
+
+Therefore:
+
+\[
+O_{n+1}=O_n
+\]
+
+while
+
+\[
+S_{n+1}=(O_n,\Gamma_n\Vert G_i)\neq(O_n,\Gamma_n)=S_n.
+\]
+
+This gives the exact relationship between the two statements that otherwise look contradictory:
+
+- **the implementation's admitted state sequence does not advance on refusal**, and
+- **the full constitutive state does advance because authenticated lineage advances**.
+
+Both remain intact.
+
+## 6. Recovery
+
+Let
+
+\[
+\operatorname{Tip}_A(\Gamma_n)=\operatorname{Tip}(\Pi_A(\Gamma_n))
+\]
+
+be the latest admitted gene.
+
+For refusal, recovery remains anchored to that admitted tip:
+
+\[
+\operatorname{RecoveryAnchor}(G_i)=\operatorname{Tip}_A(\Gamma_n).
+\]
+
+The refused gene remains in \(\Gamma\) without becoming the authorized recovery checkpoint.
+
+## 7. Self-similarity
+
+The TAS_DNA claim is preserved at both levels:
+
+> **The same constitutional datum carries origin, authority, invariants, decision, and receipt through both successful and refused transitions.**
+
+The admitted projection decides what may become consequential operational state. The full lineage records what actually occurred at the execution boundary.
+
+## 8. Formal closure
+
+The minimal closure is:
+
+\[
+\boxed{
+\Gamma_{n+1}=\Gamma_n\Vert G_i
+}
+\]
+
+with
+
+\[
+\boxed{
+O_{n+1}=
 \begin{cases}
-\text{evidence projection: all represented decisions}\\
-\text{state projection: admitted decisions only}
-\end{cases}
-}
+F(O_n,G_i), & d_i=\mathrm{ADMITTED},\\[4pt]
+O_n, & d_i=\mathrm{REFUSED}.
+\end{cases}}
 \]
 
-There is no contradiction once the two projections are not collapsed into one variable.
-
-## 6. Refusal
-
-A refusal is therefore formalized as:
+and therefore
 
 \[
 \boxed{
-G_i.d=\mathrm{REFUSED}
-\Rightarrow
-\mathcal E_{n+1}=\mathcal E_n\Vert G_i
-\land
-S_{k+1}=S_k
+S_{n+1}=(O_{n+1},\Gamma_{n+1}).
 }
 \]
 
-This matches the current implementation:
-
-- the refused `TASGene` is appended to WakeChain evidence,
-- `state_sequence()` does not advance,
-- recovery remains anchored to the last admitted checkpoint.
-
-The negative event is preserved without being promoted into authorized state.
-
-## 7. Admission
-
-Admission uses the same datum:
-
-\[
-\boxed{
-G_i.d=\mathrm{ADMITTED}
-\Rightarrow
-\mathcal E_{n+1}=\mathcal E_n\Vert G_i
-\land
-S_{k+1}=F(S_k,G_i)
-}
-\]
-
-The difference between success and refusal is therefore carried by `decision`, not by changing the underlying grammar of the computational unit.
-
-## 8. Self-similarity
-
-This is the TAS_DNA claim in its narrowest form:
-
-> **The same constitutional data grammar survives both admission and refusal.**
-
-The gene carries origin, context, authority, operation, parentage, invariants, decision, and receipt in either branch. The local datum therefore preserves the same relationship that the larger execution architecture enforces.
+One datum. One lineage. One irreducible state relation.
 
 ## Source correspondence
 
-This formalization follows the upstream definitions in:
+This formalization aligns:
 
-- `core/gene.py` — `TASGene: the canonical minimal transition unit`,
-- `docs/specs/intelligent_self_similar_design.md` — §3 two simultaneous histories and §4 TAS_DNA gene,
-- `core/wakechain.py` — evidence timeline versus admission-only state sequence,
-- merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` — executable refusal-path coverage.
+- `core/gene.py` — `TASGene` as the canonical minimal transition unit,
+- `core/wakechain.py` — evidence timeline and admission-only state sequence,
+- `docs/specs/intelligent_self_similar_design.md` — the two simultaneous histories and TAS_DNA gene,
+- merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` — executable refusal-path behavior.
