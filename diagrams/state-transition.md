@@ -1,4 +1,4 @@
-# TAS_DNA Transition Diagram
+# TAS_DNA State Relation
 
 ```mermaid
 flowchart TD
@@ -7,45 +7,47 @@ flowchart TD
     V -->|Refused| GR[TASGene<br/>decision = REFUSED]
     V -->|Cannot safely represent normal decision| F[Fail-stop]
 
-    GA --> E[Evidence timeline]
-    GR --> E
+    GA --> G[Authenticated lineage Gamma]
+    GR --> G
 
-    GA --> S1[Authorized state advances]
-    GR --> S0[Authorized state unchanged]
+    G --> A[Admitted projection Pi_A Gamma]
+    A --> O[Operational state O]
+    G --> S[Full state S = O, Gamma]
+    O --> S
 ```
 
-## One datum, two projections
+## Admission
 
 ```mermaid
 flowchart LR
-    G[TAS_DNA gene G_i] --> E[Evidence projection]
-    G --> S[Authorized-state projection]
-
-    E --> EA[ADMITTED retained]
-    E --> ER[REFUSED retained]
-
-    S --> SA[ADMITTED advances state]
-    S --> SR[REFUSED leaves state unchanged]
+    G1[TAS_DNA gene: ADMITTED] --> L1[Gamma extends]
+    G1 --> A1[Admitted projection extends]
+    A1 --> O1[Operational state may advance]
+    L1 --> S1[Full state advances]
+    O1 --> S1
 ```
 
-The same TAS_DNA grammar is used in both branches. The decision field determines whether the datum contributes only to evidence or also advances authorized state.
+## Refusal
 
-Formally:
+```mermaid
+flowchart LR
+    G2[TAS_DNA gene: REFUSED] --> L2[Gamma extends]
+    G2 --> A2[Admitted projection unchanged]
+    A2 --> O2[Operational state unchanged]
+    L2 --> S2[Full state advances]
+    O2 --> S2
+```
+
+The refusal branch therefore satisfies both:
 
 \[
-G_i.d=\mathrm{ADMITTED}
-\Rightarrow
-\mathcal E_{n+1}=\mathcal E_n\Vert G_i
-\land
-S_{k+1}=F(S_k,G_i),
+O_{n+1}=O_n
 \]
 
-while
+and
 
 \[
-G_i.d=\mathrm{REFUSED}
-\Rightarrow
-\mathcal E_{n+1}=\mathcal E_n\Vert G_i
-\land
-S_{k+1}=S_k.
+S_{n+1}\neq S_n
 \]
+
+because the TAS_DNA datum extends authenticated lineage even though it does not enter the admitted projection.
