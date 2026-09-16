@@ -1,81 +1,96 @@
 # Cursive Computation
 
-Cursive computation is the TAS model in which authenticated execution history is carried forward as part of the current state rather than being treated as detachable audit exhaust.
+Cursive computation is the extension-only processing of lineage-bearing TAS_DNA genes.
 
-## State
+The canonical datum is
 
 \[
-S_n=(O_n,\Gamma_n)
+G_i=(o_i,c_i,a_i,x_i,p_i,\Phi_i,d_i,r_i).
 \]
 
-The lineage coordinate \(\Gamma_n\) is an ordered authenticated trajectory. Each accepted evaluation extends that trajectory with a receipt bound to the prior tip.
+Each represented decision is appended to the ordered computational chronology. The distinction between admission and refusal is carried by the decision field, not by changing the data grammar.
 
 ## The cursive stroke
 
-For an evaluated instruction \(x_n\), define a receipt \(r_n\). The lineage transition is
+Let \(\mathcal G_n\) be the ordered gene chronology.
+
+A represented decision extends it as
 
 \[
-\Gamma_{n+1}=\operatorname{Extend}(\Gamma_n,r_n)
+\mathcal G_{n+1}=\mathcal G_n\Vert G_i.
 \]
 
-subject to
+Parent binding preserves ancestry:
 
 \[
-\operatorname{parent}(r_n)=\operatorname{Tip}(\Gamma_n).
+p_i=\operatorname{Tip}(\mathcal G_n).
 \]
 
-This parent binding is what turns a collection of records into a trajectory.
+The append is the cursive stroke: the next datum is joined to the prior lineage rather than replacing it.
 
 ## Admission stroke
 
-When the proposal is admissible, both operational state and lineage advance:
+For
 
 \[
-O_{n+1}\neq O_n,
-\qquad
-\Gamma_{n+1}\neq\Gamma_n.
+d_i=\mathrm{ADMITTED},
+\]
+
+the datum is retained in evidence and advances the authorized state sequence:
+
+\[
+\mathcal E_{n+1}=\mathcal E_n\Vert G_i,
+\]
+
+\[
+S_{k+1}=F(S_k,G_i).
 \]
 
 ## Refusal stroke
 
-When the proposal is not admissible, protected operational state is preserved while lineage advances:
+For
 
 \[
-O_{n+1}=O_n,
-\qquad
-\Gamma_{n+1}\neq\Gamma_n.
+d_i=\mathrm{REFUSED},
 \]
 
-The refusal is therefore not absence of computation. It is an authenticated non-effect with evidentiary consequence.
-
-## History-dependent identity
-
-Two states can expose the same operational data yet remain computationally distinct:
+the same datum grammar is retained in evidence while authorized state remains stationary:
 
 \[
-O_a=O_b,
-\qquad
-\Gamma_a\neq\Gamma_b
-\Rightarrow
-S_a\neq S_b.
+\mathcal E_{n+1}=\mathcal E_n\Vert G_i,
 \]
 
-This prevents a system from collapsing distinct trajectories into a single identity merely because their visible outputs coincide.
+\[
+S_{k+1}=S_k.
+\]
+
+The refusal is therefore not absence of computation. It is an authenticated negative decision that remains in the process chronology without becoming the next authorized state.
+
+## One chronology, two views
+
+The upstream implementation exposes this directly:
+
+- `WakeChain.evidence_timeline()` retains admissions and refusals.
+- `WakeChain.state_sequence()` retains Genesis and admitted links only.
+
+These are projections over the same lineage-bearing computational events, not competing definitions of state.
 
 ## Rebase is not rewrite
 
-A stale candidate derived from an earlier lineage head cannot silently replace its parent claim with the current head. It must be re-derived against the new authenticated parent while preserving evidence of the prior attempt.
+A stale candidate derived from an earlier authorized head cannot silently replace its parent claim with the current head. It must be re-derived against the new parent while preserving evidence of the prior attempt.
 
-If candidate \(e_B\) was derived from head \(H_0\), but the authenticated head has advanced to \(H_1\), then a valid successor is a new object:
+If candidate \(G_b\) was derived from head \(H_0\), but authorized state has advanced to \(H_1\), then a valid successor is a new datum:
 
 \[
-e'_B=\operatorname{Rebase}(e_B,H_1)
+G'_b=\operatorname{Rebase}(G_b,H_1).
 \]
 
-with an explicit relation back to the stale candidate rather than historical erasure.
+The stale event is not erased from evidence.
 
 ## Cursive identity
 
 The essential rule is:
 
-> The present is not merely a configuration. It is a configuration together with the authenticated path that made it present.
+> **Extension changes the record; admission changes authorized state.**
+
+Cursive computation therefore preserves trajectory without requiring every recorded event to become consequential state.
