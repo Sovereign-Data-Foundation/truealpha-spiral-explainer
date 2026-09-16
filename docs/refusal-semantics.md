@@ -2,46 +2,72 @@
 
 A refusal is a TAS_DNA gene whose decision is `REFUSED`.
 
-The architecture does not need a second kind of object for failure. Admission and refusal use the same canonical transition grammar:
+Admission and refusal use the same canonical transition grammar:
 
 \[
 G_i=(o_i,c_i,a_i,x_i,p_i,\Phi_i,d_i,r_i).
 \]
 
-The refusal branch is selected by
+For refusal:
 
 \[
 d_i=\mathrm{REFUSED}.
 \]
 
-## Refusal preserves evidence and state semantics simultaneously
+## Refusal at both levels
 
-Let \(\mathcal E_n\) denote the evidence projection and \(S_k\) the authorized state sequence.
-
-A refusal gives
+Let the authenticated lineage be
 
 \[
-\mathcal E_{n+1}=\mathcal E_n\Vert G_i
+\Gamma_n=(G_1,\ldots,G_n)
 \]
 
-while
+and let
 
 \[
-S_{k+1}=S_k.
+\Pi_A(\Gamma_n)
 \]
 
-So the event is preserved without being promoted into authorized state.
+be its admitted projection.
 
-This is the precise meaning of:
+A refused gene extends full lineage:
 
-> **No state change does not mean no event.**
+\[
+\Gamma_{n+1}=\Gamma_n\Vert G_i,
+\]
+
+but leaves the admitted projection unchanged:
+
+\[
+\Pi_A(\Gamma_{n+1})=\Pi_A(\Gamma_n).
+\]
+
+Therefore authorized operational state is preserved:
+
+\[
+O_{n+1}=O_n.
+\]
+
+At the same time, for the irreducible full state
+
+\[
+S_n=(O_n,\Gamma_n),
+\]
+
+we have
+
+\[
+S_{n+1}=(O_n,\Gamma_n\Vert G_i)\neq S_n.
+\]
+
+So refusal preserves operational state while advancing constitutive state.
 
 ## Evidence timeline vs state sequence
 
-The current reference implementation exposes exactly these projections:
+The reference implementation exposes this distinction through two WakeChain views:
 
-- `WakeChain.evidence_timeline()` contains Genesis, admissions, and refusals.
-- `WakeChain.state_sequence()` contains Genesis and admissions only.
+- `evidence_timeline()` contains Genesis, admissions, and refusals,
+- `state_sequence()` contains Genesis and admissions only.
 
 After one admission followed by one refusal:
 
@@ -50,7 +76,7 @@ evidence timeline: Genesis -> Admission -> Refusal
 state sequence:    Genesis -> Admission
 ```
 
-There is no need to reinterpret the refusal as a change to a larger composite state. The refusal already has a canonical home: the evidence chronology carried by TAS_DNA.
+The admission-only `state_sequence()` is the implementation projection \(\Pi_A(\Gamma)\). It does not replace the full state \(S=(O,\Gamma)\).
 
 ## Refusal-path invariant
 
@@ -58,40 +84,45 @@ For refused gene \(G_i\):
 
 \[
 \boxed{
-d_i=\mathrm{REFUSED}
+G_i.d=\mathrm{REFUSED}
 \Rightarrow
-\mathcal E_{n+1}=\mathcal E_n\Vert G_i
+\Gamma_{n+1}=\Gamma_n\Vert G_i
 \land
-S_{k+1}=S_k}
+\Pi_A(\Gamma_{n+1})=\Pi_A(\Gamma_n)
+\land
+O_{n+1}=O_n
+\land
+S_{n+1}\neq S_n
+}
 \]
-
-This is the central refusal invariant.
 
 ## Recovery anchor
 
-A refused gene remains in evidence but does not become an authorized recovery checkpoint.
+A refused gene remains in authenticated lineage but does not become an authorized recovery checkpoint.
 
-If \(G_a\) is the last admitted gene and \(G_r\) is the following refused gene, then recovery remains anchored to \(G_a\):
+Let
 
 \[
-\operatorname{RecoveryAnchor}(G_r)=G_a.
+\operatorname{Tip}_A(\Gamma_n)=\operatorname{Tip}(\Pi_A(\Gamma_n)).
 \]
 
-If refusal occurs before any admitted successor to Genesis, recovery anchors to `GENESIS`.
+Then
+
+\[
+\operatorname{RecoveryAnchor}(G_i)=\operatorname{Tip}_A(\Gamma_n).
+\]
+
+At Genesis, recovery anchors to `GENESIS` until an admitted successor exists.
 
 ## Runtime null collapse
 
-The current `CanonicalVerticalSlice` may first verify a proposal successfully and then encounter a runtime null-collapse.
-
-The implementation records
+If verifier admission is followed by runtime null-collapse, the vertical slice records
 
 ```text
 RUNTIME_NULL_COLLAPSE
 ```
 
-and emits a refused TAS_DNA gene rather than advancing authorized state.
-
-Thus:
+and emits a refused TAS_DNA gene:
 
 \[
 \operatorname{Verified}(x)
@@ -101,11 +132,9 @@ Thus:
 G_i.d=\mathrm{REFUSED}.
 \]
 
-The same gene grammar survives the runtime failure.
+The refusal extends \(\Gamma\) but not \(\Pi_A(\Gamma)\).
 
 ## Deterministic refusal identity
-
-A refusal receipt is content-addressed from its canonical payload.
 
 Let \(p_i^-\) be the canonical refusal payload and
 
@@ -121,11 +150,11 @@ p_a^-=p_b^-
 R_a^-=R_b^-.
 \]
 
-Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` makes the execution boundary supply the resolved evaluation timestamp to the refusal artifact, preventing an internal wall clock from changing receipt identity for otherwise fixed inputs.
+Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` passes the resolved evaluation timestamp into the refusal artifact so fixed canonical refusal inputs have stable receipt identity.
 
 ## Refusal is non-compensatory
 
-A refusal is not equivalent to committing a mutation and then undoing it.
+A refusal is not equivalent to committing a mutation and later undoing it.
 
 TAS prefers
 
@@ -139,4 +168,4 @@ over
 \text{commit}\rightarrow\text{detect}\rightarrow\text{compensate}.
 \]
 
-The refused gene proves that the candidate reached the boundary and did not become authorized state.
+The refused TAS_DNA gene proves that the candidate reached the boundary without becoming an admitted operational transition.
