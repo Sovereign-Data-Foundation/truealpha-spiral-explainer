@@ -6,6 +6,32 @@
 
 This repository formalizes the architecture around one lineage-bearing datum already present in the implementation: **TAS_DNA / `TASGene`**.
 
+## Migration purpose
+
+This repository is the migration surface for bringing the last 18 months of **Perspective Intelligence** \((\pi)\) / TAS_DNA work into one place.
+
+Here, \(\pi\) names **Perspective Intelligence**: the invariant relation between deterministic anchoring and probabilistic perspective within one coherent architecture.
+
+Conceptually:
+
+\[
+\pi
+=
+\frac{\text{probabilistic circumference}}
+{\text{deterministic diameter}}
+\]
+
+The deterministic diameter anchors provenance, lineage, admissibility, receipts, and recovery anchors. The probabilistic circumference carries prediction, likelihood, inference, language, context, and variation.
+
+Its job is to re-present TAS_DNA as a complete state-space architecture rather than as isolated notes, implementation fragments, or one-off explanations.
+
+The materials are organized so the same system can be read across four linked layers:
+
+- `docs/` explains the conceptual and architectural relations,
+- `formal/` states the machine-level closure and invariants,
+- `spec/` fixes the shared terminology,
+- `diagrams/` gives the compact structural view.
+
 ## One datum
 
 The canonical transition datum is
@@ -145,6 +171,8 @@ Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` adds executable coverage showi
 8. [Constitutional Meta-Layer](docs/constitutional-meta-layer.md)
 9. [Formal State Machine](formal/state-machine.md)
 10. [Terminology](spec/terminology.md)
+
+Taken together, these documents are the repository's unified re-presentation of TAS_DNA in its full state space: one datum, one authenticated lineage, one admitted operational projection, and one irreducible state relation.
 
 ## Status
 
