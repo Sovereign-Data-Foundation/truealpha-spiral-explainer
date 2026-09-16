@@ -1,96 +1,109 @@
 # TrueAlphaSpiral Explainer
 
-**TrueAlphaSpiral (TAS)** is a deterministic execution architecture for consequential computation. Its central rule is simple:
+**TrueAlphaSpiral (TAS)** is a deterministic execution architecture for consequential computation.
 
 > **Capability does not imply authority. Proof must precede consequence.**
 
-This repository is the public explainer and formal-specification companion for the TrueAlphaSpiral architecture. It is organized so a reader can move from the core state model to admissibility, refusal semantics, constitutional transitions, and implementation-oriented reference material without changing vocabularies between layers.
+This repository explains the architecture by staying anchored to the smallest canonical computational unit already present in the implementation: **TAS_DNA / `TASGene`**.
 
-## Core state model
+## One datum
 
-TAS treats state as an irreducible pair:
-
-\[
-S_n := (O_n, \Gamma_n)
-\]
-
-where:
-
-- \(O_n\) is the protected **operational state**.
-- \(\Gamma_n\) is the ordered, authenticated **lineage** of evaluated events and receipts.
-
-Operational equality is therefore not sufficient for state identity:
+The canonical transition datum is
 
 \[
-O_a = O_b \;\not\Rightarrow\; S_a = S_b
+G_i=(\text{origin},\text{context},\text{authority},\text{operation},\text{parent},\text{invariants},\text{decision},\text{receipt}).
 \]
 
-If the lineages differ, the states differ:
+The implementation represents that datum as `TASGene`.
+
+A gene can be `ADMITTED`, `REFUSED`, or `PENDING`, but the grammar of the datum does not change across branches.
+
+## Two projections
+
+The same TAS_DNA chronology supports two different views:
+
+1. **Evidence timeline** — every represented admission and refusal.
+2. **Authorized state progression** — admitted transitions only.
+
+Let \(\mathcal G_n\) be the ordered gene chronology.
+
+Every represented decision appends one datum:
 
 \[
-\Gamma_a \neq \Gamma_b \;\Rightarrow\; (O_a,\Gamma_a) \neq (O_b,\Gamma_b)
+\mathcal G_{n+1}=\mathcal G_n\Vert G_i.
 \]
 
-This gives TAS its central history-sensitive property: **history is not external audit metadata; authenticated history is constitutive of state.**
-
-## Refusal is a state transition
-
-A rejected proposal does not mutate protected operational state, but it does append authenticated evidence to lineage:
+For admission:
 
 \[
-O_{n+1}=O_n
+G_i.d=\mathrm{ADMITTED}
+\Rightarrow
+\mathcal E_{n+1}=\mathcal E_n\Vert G_i
+\land
+S_{k+1}=F(S_k,G_i).
 \]
+
+For refusal:
 
 \[
-\Gamma_{n+1}=\operatorname{Extend}(\Gamma_n,r^-_n)
+G_i.d=\mathrm{REFUSED}
+\Rightarrow
+\mathcal E_{n+1}=\mathcal E_n\Vert G_i
+\land
+S_{k+1}=S_k.
 \]
 
-Therefore:
+That is the central distinction:
+
+> **A refusal is preserved as evidence without becoming the next authorized state.**
+
+The current implementation exposes exactly these two projections through `WakeChain.evidence_timeline()` and `WakeChain.state_sequence()`.
+
+## Why this matters
+
+The explainer previously introduced a composite full-state model of the form
 
 \[
-S_{n+1}\neq S_n
+S=(O,\Gamma).
 \]
 
-The key distinction is:
+That abstraction created a conceptual mismatch with the upstream implementation, where the documented state lineage advances only through admitted transitions while refusals remain in the evidentiary timeline.
 
-> **Refusal preserves operational state while advancing constitutive state.**
+This repository now keeps those semantics separate rather than silently redefining either one.
 
-This repository treats admission, refusal, and fail-stop as distinct transition outcomes rather than collapsing all non-mutation into a single notion of "nothing happened."
+The canonical object to formalize is **TAS_DNA**. State and evidence are projections over the same lineage-bearing datum.
 
 ## Architecture at a glance
 
 ```text
-Proposal / Instruction
-        |
-        v
-+-----------------------+
-|  Admissibility Gate   |
-| auth / authority /    |
-| scope / invariants /  |
-| freshness / witness   |
-+-----------+-----------+
-            |
-      +-----+-----+
-      |           |
-   ADMIT        REFUSE
-      |           |
-      v           v
-  ΔO != 0      ΔO = 0
-  ΔΓ != 0      ΔΓ != 0
-      |           |
-      +-----+-----+
-            |
-            v
-      S' = (O', Γ')
+Proposal
+   |
+   v
+Verification / Admissibility
+   |
+   +-------------------+
+   |                   |
+ ADMITTED             REFUSED
+   |                   |
+   v                   v
+TASGene              TASGene
+ decision=ADMITTED    decision=REFUSED
+   |                   |
+   +---------+---------+
+             |
+             v
+       Evidence timeline
+       (both retained)
 
-Evaluation indeterminate or structurally unprovable:
-            -> FAIL-STOP / ⊥
+Authorized state progression:
+  advances on ADMITTED
+  unchanged on REFUSED
 ```
 
 ## Reading order
 
-1. [Foundational Axioms](docs/foundational-axioms.md)
-2. [The Irreducible State](docs/irreducible-state.md)
+1. [TAS_DNA — One Datum, Two Projections](docs/tas-dna.md)
+2. [Foundational Axioms](docs/foundational-axioms.md)
 3. [Cursive Computation](docs/cursive-computation.md)
 4. [Admissibility](docs/admissibility.md)
 5. [Canonical Vertical Slice](docs/canonical-vertical-slice.md)
@@ -101,80 +114,40 @@ Evaluation indeterminate or structurally unprovable:
 
 ## Core invariants
 
-### 1. Capability is not authority
+### Capability is not authority
 
-A generator may propose a transition. It does not thereby acquire authority to commit that transition.
+A generator may propose a transition. Proposal capability does not grant authority to commit it.
 
-### 2. Consequence is proof-gated
+### Proof precedes consequence
 
-A consequential transition is admissible only when the required predicates can be recomputed and verified by the execution boundary.
+A consequential transition is admitted only after the required predicates are verified.
 
-### 3. Refusal is evidentiary
+### One constitutional grammar
 
-A refused transition preserves \(O\) but advances \(\Gamma\) with a refusal receipt.
+Admission and refusal are encoded with the same minimal TAS_DNA structure.
 
-### 4. Lineage is ordered
+### Refusal is evidence, not state progression
 
-Lineage is not an unordered set of receipts. Each new receipt binds to the authenticated tip of the prior lineage.
+A refused gene is retained in the evidence chronology but does not advance authorized state.
 
-### 5. Fail closed under ambiguity
+### Recovery anchors to admitted state
 
-If the system cannot prove that a candidate transition is admissible, it does not guess. It halts or refuses according to the applicable transition semantics.
+A refusal does not become the recovery checkpoint. Recovery anchors to the last admitted checkpoint.
 
-### 6. Recovery anchors to admitted state
+### Fixed canonical refusal inputs have stable receipt identity
 
-A refusal remains in the authenticated evidence timeline without becoming the checkpoint from which protected operational state is recovered. Recovery anchors to the last admitted checkpoint.
-
-### 7. Fixed refusal inputs have stable receipt identity
-
-When the canonical refusal payload is fixed—including the resolved evaluation timestamp—the refusal receipt hash is stable across repeated execution.
-
-## Formal transition sketch
-
-Let \(\operatorname{Adm}(S_n,x)\in\{0,1\}\) be the admissibility predicate for proposal \(x\).
-
-\[
-T(S_n,x)=
-\begin{cases}
-(O_{n+1},\operatorname{Extend}(\Gamma_n,r^+_n)) & \text{if } \operatorname{Adm}(S_n,x)=1 \\
-(O_n,\operatorname{Extend}(\Gamma_n,r^-_n)) & \text{if } \operatorname{Adm}(S_n,x)=0 \\
-\bot & \text{if evaluation itself cannot be established}
-\end{cases}
-\]
-
-The operational mutation condition is deliberately narrower than state advancement:
-
-\[
-\Delta O \neq 0 \iff \text{admitted consequential mutation}
-\]
-
-while, for an evaluated event that produces a receipt:
-
-\[
-\Delta \Gamma \neq 0
-\]
-
-and therefore normally:
-
-\[
-\Delta S \neq 0
-\]
-
-whether the proposal is admitted or refused.
+When the canonical refusal payload is fixed, including its resolved evaluation timestamp, the refusal receipt hash is stable across repeated execution.
 
 ## Implementation correspondence
 
-The current reference implementation makes an important projection explicit through `WakeChain`:
+The current upstream implementation explicitly defines:
 
-- `evidence_timeline()` contains Genesis, admissions, **and refusals**.
-- `state_sequence()` contains Genesis and **admissions only**.
+- `TASGene` as the **canonical minimal transition unit**,
+- `WakeChain.evidence_timeline()` as admissions plus refusals,
+- `WakeChain.state_sequence()` as Genesis plus admissions only.
 
-In this explainer, \(S=(O,\Gamma)\) denotes the irreducible full state. The implementation method `state_sequence()` should therefore be read as the admitted operational-state progression, not as the complete \((O,\Gamma)\) object. A refusal advances the evidence timeline and the full constitutive state while leaving the admitted operational projection unchanged.
-
-Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` adds executable coverage for that distinction, recovery anchoring to the prior admitted checkpoint, runtime null-collapse routing through refusal, and stable refusal receipt IDs for fixed evaluation inputs.
+Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` adds direct tests for refusal preservation, admission-only state progression, recovery anchoring, runtime null-collapse refusal, and deterministic refusal receipt IDs for fixed inputs.
 
 ## Status
 
-This repository is an explainer/specification surface. It is intended to make the architecture independently inspectable and to separate claims about the model from executable verification work.
-
-The specification is under active refinement. Definitions should be tightened by preserving one vocabulary across prose, equations, diagrams, and reference implementations.
+This is an explainer and formalization surface. Its job is to describe the architecture already expressed by the canonical datum and implementation without inventing a second ontology to reconcile it.
