@@ -1,37 +1,51 @@
-# State Transition Diagram
+# TAS_DNA Transition Diagram
 
 ```mermaid
 flowchart TD
-    P[Proposal / Instruction] --> G[Admissibility Gate]
-    G -->|All required predicates true| A[Admission]
-    G -->|Predicate false| R[Refusal]
-    G -->|Evaluation cannot be safely established| F[Fail-stop ⊥]
+    P[Proposal / Instruction] --> V[Verification / Admissibility]
+    V -->|Admitted| GA[TASGene<br/>decision = ADMITTED]
+    V -->|Refused| GR[TASGene<br/>decision = REFUSED]
+    V -->|Cannot safely represent normal decision| F[Fail-stop]
 
-    A --> AO[Operational mutation: ΔO ≠ 0]
-    A --> AG[Admission receipt: ΔΓ ≠ 0]
+    GA --> E[Evidence timeline]
+    GR --> E
 
-    R --> RO[Operational preservation: ΔO = 0]
-    R --> RG[Refusal receipt: ΔΓ ≠ 0]
-
-    AO --> AS[Successor state S' = (O', Γ')]
-    AG --> AS
-    RO --> RS[Successor state S' = (O, Γ')]
-    RG --> RS
+    GA --> S1[Authorized state advances]
+    GR --> S0[Authorized state unchanged]
 ```
 
-## Identity distinction
+## One datum, two projections
 
 ```mermaid
 flowchart LR
-    A[State A] --> OA[Operational state O]
-    A --> GA[Lineage Γa]
-    B[State B] --> OB[Operational state O]
-    B --> GB[Lineage Γb]
+    G[TAS_DNA gene G_i] --> E[Evidence projection]
+    G --> S[Authorized-state projection]
 
-    OA --- EQ[Oa = Ob]
-    OB --- EQ
-    GA --- NEQ[Γa ≠ Γb]
-    GB --- NEQ
+    E --> EA[ADMITTED retained]
+    E --> ER[REFUSED retained]
+
+    S --> SA[ADMITTED advances state]
+    S --> SR[REFUSED leaves state unchanged]
 ```
 
-Even when the operational projections are equal, different authenticated trajectories imply different full states.
+The same TAS_DNA grammar is used in both branches. The decision field determines whether the datum contributes only to evidence or also advances authorized state.
+
+Formally:
+
+\[
+G_i.d=\mathrm{ADMITTED}
+\Rightarrow
+\mathcal E_{n+1}=\mathcal E_n\Vert G_i
+\land
+S_{k+1}=F(S_k,G_i),
+\]
+
+while
+
+\[
+G_i.d=\mathrm{REFUSED}
+\Rightarrow
+\mathcal E_{n+1}=\mathcal E_n\Vert G_i
+\land
+S_{k+1}=S_k.
+\]
