@@ -3,19 +3,19 @@
 TrueAlphaSpiral begins from a separation that ordinary generative systems often blur:
 
 \[
-\text{Capability} \not\Rightarrow \text{Authority}
+\text{Capability} \not\Rightarrow \text{Authority}.
 \]
 
 A system may be able to propose, synthesize, predict, optimize, or construct a candidate transition without thereby possessing authority to make that transition consequential.
 
 ## Axiom 1 — Capability does not imply authority
 
-Let \(C(x)\) denote computational capability to propose or construct action \(x\), and let \(A(x)\) denote externally grounded authority for \(x\).
+Let \(C(x)\) denote computational capability to propose action \(x\), and let \(A(x)\) denote externally grounded authority for \(x\).
 
-TAS rejects the implication:
+TAS rejects:
 
 \[
-C(x) \Rightarrow A(x)
+C(x)\Rightarrow A(x).
 \]
 
 Authority must be established independently of generative capability.
@@ -24,15 +24,13 @@ Authority must be established independently of generative capability.
 
 Consequential mutation is admissible only after the required predicates have been recomputed and verified.
 
-For an effectful transition \(x\):
-
 \[
 \operatorname{Commit}(x)
 \Rightarrow
-\operatorname{Proof}(x)
+\operatorname{Proof}(x).
 \]
 
-The verifier is not permitted to infer proof from confidence, fluency, model identity, process identity, or successful proposal generation.
+The verifier does not infer proof from confidence, fluency, model identity, process identity, or successful proposal generation.
 
 ## Axiom 3 — Fail closed
 
@@ -41,30 +39,53 @@ When admissibility cannot be established, execution does not guess.
 \[
 \neg\operatorname{Prove}(\operatorname{Adm}(S,x))
 \Rightarrow
-\neg\operatorname{Commit}(x)
+\neg\operatorname{Commit}(x).
 \]
 
-Depending on the failure class, the result is either an authenticated refusal or a fail-stop state \(\bot\).
+A failed candidate is refused, quarantined, or hard-stopped according to the applicable boundary semantics.
 
-## Axiom 4 — Trajectory integrity is constitutive
+## Axiom 4 — TAS_DNA is the canonical minimal transition unit
 
-The current system state is not identified solely by its visible operational configuration.
+The constitutional relationship is carried by one datum:
 
 \[
-S=(O,\Gamma)
+G_i=(o_i,c_i,a_i,x_i,p_i,\Phi_i,d_i,r_i).
 \]
 
-Authenticated lineage \(\Gamma\) is part of state identity. Therefore two operationally equal configurations may still be distinct system states:
+The fields represent origin, context, authority, operation, parent, invariants, decision, and receipt.
+
+Admission and refusal use the same grammar. The difference is carried by \(d_i\), not by changing the type of datum.
+
+## Axiom 5 — Evidence and state are distinct projections
+
+The same ordered TAS_DNA chronology supports both:
+
+- an evidence projection retaining admissions and refusals, and
+- an authorized-state projection advancing through admissions only.
+
+For refusal:
 
 \[
-O_a=O_b
-\quad\land\quad
-\Gamma_a\neq\Gamma_b
-\quad\Rightarrow\quad
-S_a\neq S_b
+d_i=\mathrm{REFUSED}
+\Rightarrow
+\mathcal E_{n+1}=\mathcal E_n\Vert G_i
+\land
+S_{k+1}=S_k.
 \]
 
-## Axiom 5 — Complete mediation
+For admission:
+
+\[
+d_i=\mathrm{ADMITTED}
+\Rightarrow
+\mathcal E_{n+1}=\mathcal E_n\Vert G_i
+\land
+S_{k+1}=F(S_k,G_i).
+\]
+
+A refusal therefore remains part of the authenticated process record without being promoted into authorized state progression.
+
+## Axiom 6 — Complete mediation
 
 Every consequential effect must cross the admissibility boundary.
 
@@ -72,15 +93,13 @@ Let \(E\) be the set of possible effect paths. TAS requires:
 
 \[
 \forall e\in E,
-\neg \mathbb{A}(e)
+\neg\mathbb A(e)
 \Rightarrow
-\neg \mathbb{C}(e)
+\neg\mathbb C(e).
 \]
-
-where \(\mathbb{A}\) means admissible and \(\mathbb{C}\) means consequentially committed.
 
 The architecture fails if an alternate execution path can bypass the gate.
 
 ## Consequence
 
-The foundational design objective is therefore not to make a generator intrinsically authoritative. It is to make unauthorized consequence unreachable through deterministic mediation.
+The foundational design objective is not to make a generator intrinsically authoritative. It is to make unauthorized consequence unreachable while preserving both positive and negative decisions through the same lineage-bearing TAS_DNA datum.
