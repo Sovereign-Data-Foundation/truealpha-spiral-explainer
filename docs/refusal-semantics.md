@@ -1,131 +1,95 @@
 # Refusal Semantics
 
-TAS distinguishes **non-mutation** from **no state transition**.
+A refusal is a TAS_DNA gene whose decision is `REFUSED`.
 
-A refused proposal can leave protected operational state untouched while still changing the full constitutive state by appending authenticated evidence.
-
-## Refusal transition
-
-For refused proposal \(x\):
+The architecture does not need a second kind of object for failure. Admission and refusal use the same canonical transition grammar:
 
 \[
-O_{n+1}=O_n
+G_i=(o_i,c_i,a_i,x_i,p_i,\Phi_i,d_i,r_i).
 \]
 
-and
+The refusal branch is selected by
 
 \[
-\Gamma_{n+1}=\operatorname{Extend}(\Gamma_n,r^-_x).
+d_i=\mathrm{REFUSED}.
 \]
 
-Therefore:
+## Refusal preserves evidence and state semantics simultaneously
+
+Let \(\mathcal E_n\) denote the evidence projection and \(S_k\) the authorized state sequence.
+
+A refusal gives
 
 \[
-S_{n+1}\neq S_n.
+\mathcal E_{n+1}=\mathcal E_n\Vert G_i
 \]
 
-The refusal receipt should bind at minimum to the state and evidence necessary to establish what was evaluated and why no operational mutation occurred.
+while
 
-## Three outcomes
+\[
+S_{k+1}=S_k.
+\]
 
-TAS should keep these outcomes distinct:
+So the event is preserved without being promoted into authorized state.
 
-| Outcome | Operational state | Lineage | Meaning |
-|---|---:|---:|---|
-| Admission | changes as authorized | advances | Consequence committed |
-| Refusal | unchanged | advances | Candidate evaluated and rejected |
-| Fail-stop | no admissible successor | implementation-defined emergency record | Evaluation itself could not be safely established |
+This is the precise meaning of:
 
-The exact fail-stop recording mechanism may vary by implementation. What must not happen is an unproven operational mutation.
+> **No state change does not mean no event.**
 
-## Evidence timeline vs admitted state progression
+## Evidence timeline vs state sequence
 
-The current reference implementation exposes two views of WakeChain history:
+The current reference implementation exposes exactly these projections:
 
-- `evidence_timeline()` contains Genesis, admissions, and refusals.
-- `state_sequence()` contains Genesis and admitted links only.
+- `WakeChain.evidence_timeline()` contains Genesis, admissions, and refusals.
+- `WakeChain.state_sequence()` contains Genesis and admissions only.
 
-This distinction is now covered directly by merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364`.
-
-For one admission followed by one refusal, the implementation requires:
+After one admission followed by one refusal:
 
 ```text
 evidence timeline: Genesis -> Admission -> Refusal
 state sequence:    Genesis -> Admission
 ```
 
-The method name `state_sequence()` denotes authorized operational progression in the implementation. It is not the same object as the explainer's full irreducible state
+There is no need to reinterpret the refusal as a change to a larger composite state. The refusal already has a canonical home: the evidence chronology carried by TAS_DNA.
+
+## Refusal-path invariant
+
+For refused gene \(G_i\):
 
 \[
-S=(O,\Gamma).
-\]
-
-Accordingly, a refusal can satisfy both:
-
-\[
-S_{n+1}\neq S_n
-\]
-
-and
-
-\[
-\Pi_O(S_{n+1})=\Pi_O(S_n),
-\]
-
-where \(\Pi_O\) is the admitted operational-state projection.
-
-## Why refusal matters
-
-A refusal receipt is not merely a log message. Once bound into \(\Gamma\), it becomes part of the authenticated trajectory against which future transitions may be evaluated.
-
-This gives a stronger statement than "failure increases knowledge":
-
-> **Refusal increases authenticated information about trajectory.**
-
-That information may include the attempted operation, parent state, applicable policy, evidence set, failure predicate, verifier identity, evaluation time, and receipt identity.
-
-## Deterministic refusal identity
-
-The current `RefusalArtifact` computes `refusal_receipt_id` as a SHA-256 hash over a canonical payload containing:
-
-- reason,
-- stable failure code,
-- candidate hash,
-- rule version,
-- parent context,
-- `REFUSED` decision state,
-- verifier identity,
-- timestamp.
-
-PR #364 makes the vertical slice pass its already-resolved evaluation timestamp into the refusal artifact instead of letting the refusal constructor generate a fresh wall-clock value.
-
-For fixed canonical payload \(p^-\):
-
-\[
-R^- = H(p^-)
-\]
-
-and therefore
-
-\[
-p^-_a=p^-_b
+\boxed{
+d_i=\mathrm{REFUSED}
 \Rightarrow
-R^-_a=R^-_b.
+\mathcal E_{n+1}=\mathcal E_n\Vert G_i
+\land
+S_{k+1}=S_k}
 \]
 
-The claim is deliberately bounded to fixed inputs. Distinct attempts evaluated at different timestamps remain distinct payloads and may have different receipt IDs.
+This is the central refusal invariant.
 
-## Runtime null collapse is a refusal
+## Recovery anchor
 
-The vertical slice first verifies the proposal. If verification admits it and a sovereign runtime is present, the runtime is then consulted.
+A refused gene remains in evidence but does not become an authorized recovery checkpoint.
 
-If the runtime produces no valid token indices, the implementation records:
+If \(G_a\) is the last admitted gene and \(G_r\) is the following refused gene, then recovery remains anchored to \(G_a\):
+
+\[
+\operatorname{RecoveryAnchor}(G_r)=G_a.
+\]
+
+If refusal occurs before any admitted successor to Genesis, recovery anchors to `GENESIS`.
+
+## Runtime null collapse
+
+The current `CanonicalVerticalSlice` may first verify a proposal successfully and then encounter a runtime null-collapse.
+
+The implementation records
 
 ```text
 RUNTIME_NULL_COLLAPSE
 ```
 
-and routes the event through the same refusal machinery rather than treating runtime failure as an untracked side path.
+and emits a refused TAS_DNA gene rather than advancing authorized state.
 
 Thus:
 
@@ -134,71 +98,45 @@ Thus:
 \land
 \operatorname{RuntimeNullCollapse}(x)
 \Rightarrow
-\operatorname{REFUSED}(x).
+G_i.d=\mathrm{REFUSED}.
 \]
 
-The evidence timeline advances; admitted operational progression does not.
+The same gene grammar survives the runtime failure.
 
-## Recovery anchors to the prior checkpoint
+## Deterministic refusal identity
 
-A refused branch remains in evidence but is not promoted into the authorized recovery state.
+A refusal receipt is content-addressed from its canonical payload.
 
-If \(g_a\) is the last admitted gene and \(g_r\) is the following refused gene, then current tests require recovery to use:
+Let \(p_i^-\) be the canonical refusal payload and
 
 \[
-\operatorname{checkpoint}(g_r)=g_a.
+R_i^-=H(\operatorname{Encode}(p_i^-)).
 \]
 
-If refusal occurs before any admitted successor to Genesis, recovery anchors to `GENESIS`.
+Then
 
-This preserves the distinction between **recording a failed attempt** and **adopting the failed attempt as state**.
+\[
+p_a^-=p_b^-
+\Rightarrow
+R_a^-=R_b^-.
+\]
+
+Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` makes the execution boundary supply the resolved evaluation timestamp to the refusal artifact, preventing an internal wall clock from changing receipt identity for otherwise fixed inputs.
 
 ## Refusal is non-compensatory
 
-A refusal is not equivalent to committing a mutation and then attempting to undo it.
+A refusal is not equivalent to committing a mutation and then undoing it.
 
-Rollback after unauthorized consequence is categorically weaker than refusal-before-execution because the forbidden effect may already have escaped the protected boundary.
-
-TAS therefore prefers:
+TAS prefers
 
 \[
-\text{verify} \rightarrow \text{admit} \rightarrow \text{commit}
+\text{verify}\rightarrow\text{admit}\rightarrow\text{commit}
 \]
 
 over
 
 \[
-\text{commit} \rightarrow \text{detect} \rightarrow \text{compensate}.
+\text{commit}\rightarrow\text{detect}\rightarrow\text{compensate}.
 \]
 
-## Preservation law
-
-For a refused event:
-
-\[
-\Delta O=0
-\quad\land\quad
-\Delta\Gamma\neq0.
-\]
-
-Hence:
-
-\[
-\Delta S\neq0.
-\]
-
-With recovery added, the executable refusal invariant is:
-
-\[
-\boxed{
-\operatorname{Refuse}(x)
-\Rightarrow
-\Delta O=0
-\land
-\Delta\Gamma\neq0
-\land
-\operatorname{RecoveryAnchor}=\operatorname{LastAdmittedCheckpoint}
-}
-\]
-
-This is the core refusal invariant of the irreducible-state model as exercised by the current vertical-slice implementation.
+The refused gene proves that the candidate reached the boundary and did not become authorized state.
