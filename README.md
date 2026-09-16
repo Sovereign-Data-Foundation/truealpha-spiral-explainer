@@ -4,7 +4,7 @@
 
 > **Capability does not imply authority. Proof must precede consequence.**
 
-This repository explains the architecture by staying anchored to the smallest canonical computational unit already present in the implementation: **TAS_DNA / `TASGene`**.
+This repository formalizes the architecture around one lineage-bearing datum already present in the implementation: **TAS_DNA / `TASGene`**.
 
 ## One datum
 
@@ -16,31 +16,63 @@ G_i=(\text{origin},\text{context},\text{authority},\text{operation},\text{parent
 
 The implementation represents that datum as `TASGene`.
 
-A gene can be `ADMITTED`, `REFUSED`, or `PENDING`, but the grammar of the datum does not change across branches.
+Admission and refusal do not require different grammars. They are different decision values carried by the same datum.
 
-## Two projections
+## The irreducible full state remains intact
 
-The same TAS_DNA chronology supports two different views:
-
-1. **Evidence timeline** — every represented admission and refusal.
-2. **Authorized state progression** — admitted transitions only.
-
-Let \(\mathcal G_n\) be the ordered gene chronology.
-
-Every represented decision appends one datum:
+At the architectural level, TAS may be expressed as
 
 \[
-\mathcal G_{n+1}=\mathcal G_n\Vert G_i.
+S_n=(O_n,\Gamma_n),
 \]
+
+where:
+
+- \(O_n\) is the authorized operational state,
+- \(\Gamma_n\) is the ordered authenticated TAS_DNA trajectory.
+
+TAS_DNA gives \(\Gamma\) its concrete unit:
+
+\[
+\Gamma_n=(G_1,G_2,\ldots,G_n).
+\]
+
+The implementation's admission-only `state_sequence()` is therefore not a rival definition of \(S\). It is an operational projection over the same lineage.
+
+Define the admitted projection
+
+\[
+\Pi_A(\Gamma_n)=\text{ordered subsequence of genes with }d_i=\mathrm{ADMITTED}.
+\]
+
+Then operational state is determined from admitted history:
+
+\[
+O_n=L(\Pi_A(\Gamma_n)),
+\]
+
+while the full state remains
+
+\[
+S_n=(O_n,\Gamma_n).
+\]
+
+## Admission and refusal
 
 For admission:
 
 \[
 G_i.d=\mathrm{ADMITTED}
 \Rightarrow
-\mathcal E_{n+1}=\mathcal E_n\Vert G_i
+\Gamma_{n+1}=\Gamma_n\Vert G_i
 \land
-S_{k+1}=F(S_k,G_i).
+\Pi_A(\Gamma_{n+1})=\Pi_A(\Gamma_n)\Vert G_i.
+\]
+
+Operational state may therefore advance:
+
+\[
+O_{n+1}=F(O_n,G_i).
 \]
 
 For refusal:
@@ -48,106 +80,72 @@ For refusal:
 \[
 G_i.d=\mathrm{REFUSED}
 \Rightarrow
-\mathcal E_{n+1}=\mathcal E_n\Vert G_i
+\Gamma_{n+1}=\Gamma_n\Vert G_i
 \land
-S_{k+1}=S_k.
+\Pi_A(\Gamma_{n+1})=\Pi_A(\Gamma_n).
 \]
 
-That is the central distinction:
-
-> **A refusal is preserved as evidence without becoming the next authorized state.**
-
-The current implementation exposes exactly these two projections through `WakeChain.evidence_timeline()` and `WakeChain.state_sequence()`.
-
-## Why this matters
-
-The explainer previously introduced a composite full-state model of the form
+So:
 
 \[
-S=(O,\Gamma).
+O_{n+1}=O_n
 \]
 
-That abstraction created a conceptual mismatch with the upstream implementation, where the documented state lineage advances only through admitted transitions while refusals remain in the evidentiary timeline.
+while
 
-This repository now keeps those semantics separate rather than silently redefining either one.
+\[
+S_{n+1}\neq S_n
+\]
 
-The canonical object to formalize is **TAS_DNA**. State and evidence are projections over the same lineage-bearing datum.
+because the authenticated lineage advanced.
+
+That is the relationship, not a demotion of either model:
+
+> **The full state advances with authenticated history; the admitted operational projection advances only on admission.**
+
+## Implementation correspondence
+
+The current upstream implementation exposes the same distinction through `WakeChain`:
+
+- `evidence_timeline()` retains Genesis, admissions, and refusals,
+- `state_sequence()` retains Genesis and admitted links only.
+
+Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` adds executable coverage showing that a refusal extends the evidence timeline, does not advance the admission-only state sequence, preserves recovery at the prior admitted checkpoint, routes runtime null-collapse through refusal, and stabilizes refusal receipt IDs for fixed inputs.
 
 ## Architecture at a glance
 
 ```text
-Proposal
-   |
-   v
-Verification / Admissibility
-   |
-   +-------------------+
-   |                   |
- ADMITTED             REFUSED
-   |                   |
-   v                   v
-TASGene              TASGene
- decision=ADMITTED    decision=REFUSED
-   |                   |
-   +---------+---------+
-             |
-             v
-       Evidence timeline
-       (both retained)
-
-Authorized state progression:
-  advances on ADMITTED
-  unchanged on REFUSED
+                 TAS_DNA gene G_i
+                       |
+              +--------+--------+
+              |                 |
+              v                 v
+      authenticated lineage   admitted projection
+            Gamma             Pi_A(Gamma)
+              |                 |
+              |                 v
+              |          operational state O
+              |                 |
+              +--------+--------+
+                       |
+                       v
+                 full state S
+                  S = (O,Gamma)
 ```
 
 ## Reading order
 
-1. [TAS_DNA — One Datum, Two Projections](docs/tas-dna.md)
-2. [Foundational Axioms](docs/foundational-axioms.md)
-3. [Cursive Computation](docs/cursive-computation.md)
-4. [Admissibility](docs/admissibility.md)
-5. [Canonical Vertical Slice](docs/canonical-vertical-slice.md)
-6. [Refusal Semantics](docs/refusal-semantics.md)
-7. [Constitutional Meta-Layer](docs/constitutional-meta-layer.md)
-8. [Formal State Machine](formal/state-machine.md)
-9. [Terminology](spec/terminology.md)
-
-## Core invariants
-
-### Capability is not authority
-
-A generator may propose a transition. Proposal capability does not grant authority to commit it.
-
-### Proof precedes consequence
-
-A consequential transition is admitted only after the required predicates are verified.
-
-### One constitutional grammar
-
-Admission and refusal are encoded with the same minimal TAS_DNA structure.
-
-### Refusal is evidence, not state progression
-
-A refused gene is retained in the evidence chronology but does not advance authorized state.
-
-### Recovery anchors to admitted state
-
-A refusal does not become the recovery checkpoint. Recovery anchors to the last admitted checkpoint.
-
-### Fixed canonical refusal inputs have stable receipt identity
-
-When the canonical refusal payload is fixed, including its resolved evaluation timestamp, the refusal receipt hash is stable across repeated execution.
-
-## Implementation correspondence
-
-The current upstream implementation explicitly defines:
-
-- `TASGene` as the **canonical minimal transition unit**,
-- `WakeChain.evidence_timeline()` as admissions plus refusals,
-- `WakeChain.state_sequence()` as Genesis plus admissions only.
-
-Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` adds direct tests for refusal preservation, admission-only state progression, recovery anchoring, runtime null-collapse refusal, and deterministic refusal receipt IDs for fixed inputs.
+1. [TAS_DNA — One Datum, One State Relation](docs/tas-dna.md)
+2. [The Irreducible State](docs/irreducible-state.md)
+3. [Foundational Axioms](docs/foundational-axioms.md)
+4. [Cursive Computation](docs/cursive-computation.md)
+5. [Admissibility](docs/admissibility.md)
+6. [Canonical Vertical Slice](docs/canonical-vertical-slice.md)
+7. [Refusal Semantics](docs/refusal-semantics.md)
+8. [Constitutional Meta-Layer](docs/constitutional-meta-layer.md)
+9. [Formal State Machine](formal/state-machine.md)
+10. [Terminology](spec/terminology.md)
 
 ## Status
 
-This is an explainer and formalization surface. Its job is to describe the architecture already expressed by the canonical datum and implementation without inventing a second ontology to reconcile it.
+This is an explainer and formalization surface. Its job is to preserve the architecture's layers and make their relationship explicit without silently rewriting one level into another.
