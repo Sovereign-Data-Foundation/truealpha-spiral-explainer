@@ -131,7 +131,7 @@ G_i.d=\mathrm{REFUSED}.
 
 Evidence advances; authorized state does not.
 
-## Deterministic refusal provenance
+## Deterministic refusal receipt under fixed payload
 
 The refusal receipt is content-addressed from a canonical payload containing the bounded refusal fields, including the resolved evaluation timestamp.
 
@@ -141,7 +141,7 @@ Let \(p_i^-\) be that payload:
 R_i^-=\operatorname{SHA256}(\operatorname{CanonicalEncode}(p_i^-)).
 \]
 
-PR #364 threads the vertical slice's resolved timestamp into `RefusalArtifact`. Therefore fixed canonical refusal payloads produce stable receipt IDs:
+PR #364 threads the vertical slice's resolved timestamp into `RefusalArtifact`. That removes wall-clock variance from repeated evaluation of the same bounded refusal payload:
 
 \[
 p_a^-=p_b^-
@@ -167,7 +167,7 @@ S_{k+1}=S_k
 }
 \]
 
-and, for fixed canonical refusal payloads:
+and, when the bounded refusal payload is held fixed:
 
 \[
 \boxed{

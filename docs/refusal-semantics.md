@@ -150,7 +150,7 @@ p_a^-=p_b^-
 R_a^-=R_b^-.
 \]
 
-Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` passes the resolved evaluation timestamp into the refusal artifact so fixed canonical refusal inputs have stable receipt identity.
+Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` passes the resolved evaluation timestamp into the refusal artifact so repeated evaluation of the same bounded refusal payload yields the same receipt identity instead of drifting with wall-clock time.
 
 ## Refusal is non-compensatory
 
