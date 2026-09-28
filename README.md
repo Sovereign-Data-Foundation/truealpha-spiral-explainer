@@ -174,6 +174,10 @@ Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` adds executable coverage showi
 
 Taken together, these documents are the repository's unified re-presentation of TAS_DNA in its full state space: one datum, one authenticated lineage, one admitted operational projection, and one irreducible state relation.
 
+## Briefs
+
+- [AI Assurance Brief — September 21–28, 2026](docs/ai-assurance-brief-2026-09-21-28.md)
+
 ## Status
 
 This is an explainer and formalization surface. Its job is to preserve the architecture's layers and make their relationship explicit without silently rewriting one level into another.
