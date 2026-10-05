@@ -159,6 +159,10 @@ Merged PR `TrueAlpha-spiral/TrueAlpha-spiral#364` adds executable coverage showi
                   S = (O,Gamma)
 ```
 
+## Recursive architectural context
+
+[Recursive Contextualization v2.0](docs/the_tas_recursive_contextualization.md) connects Process Science, Algorithmic Dendrology, Cursive Computation, and mechanical enforcement. It clarifies admission versus commitment, refusal conservation, recursive composition, and the assumptions behind the guarantees.
+
 ## Reading order
 
 1. [TAS_DNA — One Datum, One State Relation](docs/tas-dna.md)
